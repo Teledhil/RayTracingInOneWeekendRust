@@ -1,6 +1,6 @@
 use crate::point3::Point3;
 use crate::ray::Ray;
-use crate::vec3::{Cross, RandomUnitDisk, Unit, Vec3};
+use crate::vec3::{mul_add, Cross, RandomUnitDisk, Unit, Vec3};
 
 pub struct Camera {
     origin: Point3,
@@ -50,12 +50,19 @@ impl Camera {
     }
     pub fn get_ray(&self, s: f64, t: f64) -> Ray {
         let rd = self.lens_radius * Vec3::random_unit_disk();
-        let offset = self.u * rd.x() + self.v * rd.y();
 
-        let origin = self.origin + offset;
-        Ray::new(
-            origin,
-            self.lower_left_corner + s * self.horizontal + t * self.vertical - origin,
-        )
+        // ray_origin = self.origin + offset
+        // offset = self.u * rd.x() + self.v * rd.y()
+        // ray_origin = self.origin + self.u * rd.x() + self.v * rd.y()
+        let origin = mul_add(&self.u, rd.x(), &mul_add(&self.v, rd.y(), &self.origin));
+
+        // direction: self.lower_left_corner + s * self.horizontal + t * self.vertical - origin
+        let direction = mul_add(
+            &self.horizontal,
+            s,
+            &mul_add(&self.vertical, t, &(self.lower_left_corner - origin)),
+        );
+
+        Ray::new(origin, direction)
     }
 }

@@ -332,7 +332,8 @@ macro_rules! dot_impl {
         impl Dot for PrivVec3<$t> {
             type Output = $t;
             fn dot(self, other: Self) -> Self::Output {
-                self.e[0] * other.e[0] + self.e[1] * other.e[1] + self.e[2] * other.e[2]
+                // a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
+                self.e[0].mul_add(other.e[0], self.e[1].mul_add(other.e[1], self.e[2]*other.e[2]))
             }
         }
         forward_ref_binop! { impl Dot, dot for PrivVec3<$t>, PrivVec3<$t> }
@@ -352,9 +353,12 @@ impl Cross for Vec3 {
     type Output = Self;
 
     fn cross(self, other: Self) -> Self::Output {
-        let e0 = self.e[1] * other.e[2] - self.e[2] * other.e[1];
-        let e1 = self.e[2] * other.e[0] - self.e[0] * other.e[2];
-        let e2 = self.e[0] * other.e[1] - self.e[1] * other.e[0];
+        // e[0] = a[1]*b[2] - a[2]*b[1]
+        let e0 = self.e[1].mul_add(other.e[2], -self.e[2] * other.e[1]);
+        // e[1] = a[2]*b[0] - a[0]*b[2]
+        let e1 = self.e[2].mul_add(other.e[0], -self.e[0] * other.e[2]);
+        // e[2] = a[0]*b[1] - a[1]*b[0]
+        let e2 = self.e[0].mul_add(other.e[1], -self.e[1] * other.e[0]);
 
         Self::Output::new(e0, e1, e2)
     }
@@ -391,7 +395,8 @@ macro_rules! random_ranged_impl {
             type RangeType = $t;
 
             fn random_ranged(range: &std::ops::Range<Self::RangeType>) -> Self {
-                range.start + (range.end - range.start) * fastrand::$t()
+                // range.start + (range.end - range.start) * fastrand::$t()
+                (range.end - range.start).mul_add(fastrand::$t(), range.start)
             }
         }
 
@@ -556,9 +561,17 @@ macro_rules! reflect_impl {
 }
 reflect_impl! { f32 f64 }
 
+pub fn mul_add(b: &Vec3, t: f64, a: &Vec3) -> Vec3 {
+    let e0 = b.x().mul_add(t, a.x());
+    let e1 = b.y().mul_add(t, a.y());
+    let e2 = b.z().mul_add(t, a.z());
+
+    Vec3::new(e0, e1, e2)
+}
+
 pub fn refract(uv: &Vec3, normal: &Vec3, etai_over_etat: f64) -> Vec3 {
     let cos_theta = (-uv).dot(normal).min(1.0);
-    let r_out_perp: Vec3 = etai_over_etat * (uv + cos_theta * normal);
+    let r_out_perp = etai_over_etat * mul_add(normal, cos_theta, uv);
     let r_out_parallel = -(1.0 - r_out_perp.length_squared()).abs().sqrt() * normal;
 
     r_out_perp + r_out_parallel

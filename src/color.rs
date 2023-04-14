@@ -5,6 +5,7 @@ use crate::vec3::Vec3;
 pub type Color = Vec3;
 
 pub const WHITE: Color = Color::const_new(1.0, 1.0, 1.0);
+pub const BLACK: Color = Color::const_new(0.0, 0.0, 0.0);
 
 const MAX_CLAMP: f64 = 0.999;
 
