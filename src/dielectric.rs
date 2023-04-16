@@ -1,9 +1,10 @@
 use crate::color::{Color, WHITE};
-use crate::hittable::HitRecord;
+use crate::hit_record::HitRecord;
 use crate::material::Material;
 use crate::ray::Ray;
 use crate::vec3::{refract, Dot, Reflect, Unit};
 
+#[derive(Clone)]
 pub struct Dielectric {
     ir: f64, // Index of Refraction
 }

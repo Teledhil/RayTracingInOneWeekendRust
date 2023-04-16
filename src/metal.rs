@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::hittable::HitRecord;
+use crate::hit_record::HitRecord;
 use crate::material::Material;
 use crate::ray::Ray;
 use crate::vec3::{Dot, RandomUnitSphere, Reflect, Vec3};
