@@ -1,8 +1,7 @@
-use std::fs::File;
-use std::io::{stdout, Write};
+use std::sync::{mpsc, Arc, Mutex};
+use std::thread;
 
-use termion::raw::IntoRawMode;
-
+use rust_ray_tracer::buffer::Buffer;
 use rust_ray_tracer::color::{Color, BLACK, WHITE};
 use rust_ray_tracer::hittable::Hittable;
 use rust_ray_tracer::hittable_list::HittableList;
@@ -30,8 +29,103 @@ fn ray_color(r: &Ray, world: &HittableList, depth: i8) -> Color {
     let unit_direction = r.direction().unit();
     let t = 0.5 * (unit_direction.y() + 1.0);
 
-    // (1.0 - t) * Color::new(1.0, 1.0, 1.0) + t * Color::new(0.5, 0.7, 1.0)
+    // (1.0 - t) * WHITE + t * Color::new(0.5, 0.7, 1.0)
     mul_add(&WHITE, 1.0 - t, &(t * Color::new(0.5, 0.7, 1.0)))
+}
+
+fn rtx(
+    world: World,
+    image_width: usize,
+    image_height: usize,
+    samples_per_pixel: u16,
+    depth: i8,
+) -> anyhow::Result<Buffer> {
+    let buffer = Buffer::new(image_width, image_height);
+
+    let (sender, receiver) = mpsc::channel();
+
+    for height in (0..image_height).rev() {
+        if let Err(e) = sender.send(height) {
+            panic!("Failed to send line number {height}: {e}");
+        }
+    }
+    drop(sender);
+
+    let receiver = Arc::new(Mutex::new(receiver));
+    let num_threads = std::thread::available_parallelism()?.get();
+    println!("Spawning {num_threads} threads");
+    thread::scope(|s| {
+        let mut threads = Vec::new();
+
+        // Spawn thread workers
+        for _ in 0..num_threads {
+            let thread = s.spawn(|| {
+                let mut lines_drawed = 0;
+                loop {
+                    let message = receiver.lock().unwrap().recv();
+                    if let Ok(height) = message {
+                        let mut line = buffer.get_line();
+                        rtx_line(
+                            &world,
+                            image_width,
+                            image_height,
+                            samples_per_pixel,
+                            depth,
+                            &mut line,
+                            height,
+                        );
+                        buffer.push_line(height, line);
+                        lines_drawed += 1;
+                    } else {
+                        return lines_drawed;
+                    }
+                }
+            });
+            threads.push(thread);
+        }
+
+        // Collect result from the thread workers
+        let mut stats = Vec::new();
+        for thread in threads {
+            match thread.join() {
+                Ok(lines_drawed) => stats.push(lines_drawed),
+                Err(e) => println!("Thread failed with {e:#?}"),
+            }
+        }
+        let str_stats = stats
+            .iter()
+            .map(|n| n.to_string())
+            .collect::<Vec<String>>()
+            .join(", ");
+        println!("Lines drawed per thread: {}", str_stats);
+    });
+
+    Ok(buffer)
+}
+
+fn rtx_line(
+    world: &World,
+    image_width: usize,
+    image_height: usize,
+    samples_per_pixel: u16,
+    depth: i8,
+    line: &mut Vec<Color>,
+    height: usize,
+) {
+    for width in 0..image_width {
+        let mut pixel_color = BLACK;
+        for _sample in 0..samples_per_pixel {
+            let u: f64 = (width as f64 + fastrand::f64()) / (image_width as f64 - 1_f64);
+            let v: f64 = (height as f64 + fastrand::f64()) / (image_height as f64 - 1_f64);
+
+            let ray = world.camera().get_ray(u, v);
+            let sample_pixel_color = ray_color(&ray, world.world(), depth);
+            pixel_color += sample_pixel_color;
+        }
+
+        let calibrated_pixel_color = (pixel_color / samples_per_pixel as f64).square_root();
+        line.push(calibrated_pixel_color);
+    }
 }
 
 fn main() -> anyhow::Result<()> {
@@ -42,44 +136,14 @@ fn main() -> anyhow::Result<()> {
 
     // Image
     const ASPECT_RATIO: f64 = 16.0 / 9.0;
-    const IMAGE_WIDTH: u32 = 1920;
-    const IMAGE_HEIGHT: u32 = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as u32;
+    const IMAGE_WIDTH: usize = 1920;
+    const IMAGE_HEIGHT: usize = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as usize;
 
     let world = World::one_weekend(ASPECT_RATIO);
 
-    let stdout = stdout();
-    let mut stdout = stdout.lock().into_raw_mode().unwrap();
+    let buffer = rtx(world, IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL, DEPTH)?;
 
-    let mut f = File::create("image.ppm")?;
-    write!(&mut f, "P3\n{IMAGE_WIDTH} {IMAGE_HEIGHT}\n256\n")?;
-
-    for height in (0..IMAGE_HEIGHT).rev() {
-        write!(
-            stdout,
-            "{}\rDrawing ({}/{IMAGE_HEIGHT})",
-            termion::clear::CurrentLine,
-            IMAGE_HEIGHT - height + 1
-        )?;
-        stdout.flush().unwrap();
-
-        for width in 0..IMAGE_WIDTH {
-            let mut pixel_color = BLACK;
-            for _sample in 0..SAMPLES_PER_PIXEL {
-                let u: f64 = (width as f64 + fastrand::f64()) / (IMAGE_WIDTH as f64 - 1_f64);
-                let v: f64 = (height as f64 + fastrand::f64()) / (IMAGE_HEIGHT as f64 - 1_f64);
-
-                let ray = world.camera().get_ray(u, v);
-                let sample_pixel_color = ray_color(&ray, world.world(), DEPTH);
-                pixel_color += sample_pixel_color;
-            }
-
-            let calibrated_pixel_color = (pixel_color / SAMPLES_PER_PIXEL as f64).square_root();
-            write!(f, "{calibrated_pixel_color}")?;
-        }
-    }
-
-    writeln!(stdout, "{}\rDone\r", termion::clear::CurrentLine)?;
-    stdout.flush().unwrap();
+    buffer.save("image.ppm")?;
 
     Ok(())
 }

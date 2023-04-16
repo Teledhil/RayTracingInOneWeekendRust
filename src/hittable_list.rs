@@ -2,7 +2,6 @@ use std::ops::Range;
 
 use crate::hittable::{HitRecord, Hittable};
 use crate::ray::Ray;
-use crate::sphere::Sphere;
 
 #[derive(Default)]
 pub struct HittableList {
@@ -10,13 +9,8 @@ pub struct HittableList {
 }
 
 impl HittableList {
-    fn push(&mut self, object: Box<dyn Hittable>) {
+    pub fn add(&mut self, object: Box<dyn Hittable>) {
         self.objects.push(object);
-    }
-
-    pub fn add_sphere(&mut self, sphere: Sphere) {
-        let wrapped_sphere = Box::new(sphere);
-        self.push(wrapped_sphere);
     }
 }
 

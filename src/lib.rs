@@ -1,3 +1,4 @@
+pub mod buffer;
 mod camera;
 pub mod color;
 mod dark_magic;

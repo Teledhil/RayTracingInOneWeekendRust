@@ -1,5 +1,4 @@
 use std::ops::Range;
-use std::rc::Rc;
 
 use crate::material::Material;
 use crate::point3::Point3;
@@ -7,19 +6,19 @@ use crate::ray::Ray;
 use crate::vec3::Dot;
 use crate::vec3::Vec3;
 
-pub struct HitRecord {
+pub struct HitRecord<'a> {
     p: Point3,
     normal: Vec3,
-    material: Rc<dyn Material>,
+    material: &'a dyn Material,
     t: f64,
     front_face: bool,
 }
 
-impl HitRecord {
+impl<'a> HitRecord<'a> {
     pub fn new(
         p: Point3,
         outward_normal: Vec3,
-        material: Rc<dyn Material>,
+        material: &'a dyn Material,
         t: f64,
         r: &Ray,
     ) -> Self {
@@ -58,8 +57,8 @@ impl HitRecord {
         &self.normal
     }
 
-    pub fn material(&self) -> Rc<dyn Material> {
-        self.material.clone()
+    pub fn material(&self) -> &dyn Material {
+        self.material
     }
 
     pub fn t(&self) -> f64 {
@@ -71,6 +70,6 @@ impl HitRecord {
     }
 }
 
-pub trait Hittable {
+pub trait Hittable: Send + Sync {
     fn hit(&self, r: &Ray, t_range: &Range<f64>) -> Option<HitRecord>;
 }
