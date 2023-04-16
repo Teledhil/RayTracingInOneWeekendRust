@@ -1,6 +1,7 @@
 use std::ops::Range;
 
-use crate::hittable::{HitRecord, Hittable};
+use crate::hit_record::HitRecord;
+use crate::hittable::Hittable;
 use crate::ray::Ray;
 
 #[derive(Default)]

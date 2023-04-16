@@ -1,5 +1,5 @@
 use crate::color::Color;
-use crate::hittable::HitRecord;
+use crate::hit_record::HitRecord;
 use crate::ray::Ray;
 
 pub trait Material: Send + Sync {

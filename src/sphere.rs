@@ -1,6 +1,7 @@
 use std::ops::Range;
 
-use crate::hittable::{HitRecord, Hittable};
+use crate::hit_record::HitRecord;
+use crate::hittable::Hittable;
 use crate::material::Material;
 use crate::point3::Point3;
 use crate::ray::Ray;

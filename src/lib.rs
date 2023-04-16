@@ -3,6 +3,7 @@ mod camera;
 pub mod color;
 mod dark_magic;
 mod dielectric;
+mod hit_record;
 pub mod hittable;
 pub mod hittable_list;
 mod lambertian;
