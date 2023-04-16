@@ -1,5 +1,5 @@
 use rust_ray_tracer::rtx;
-use rust_ray_tracer::world::World;
+use rust_ray_tracer::scene::Scene;
 
 fn main() -> anyhow::Result<()> {
     fastrand::seed(1337);
@@ -12,9 +12,9 @@ fn main() -> anyhow::Result<()> {
     const IMAGE_WIDTH: usize = 1920;
     const IMAGE_HEIGHT: usize = (IMAGE_WIDTH as f64 / ASPECT_RATIO) as usize;
 
-    let world = World::one_weekend(ASPECT_RATIO);
+    let scene = Scene::one_weekend(ASPECT_RATIO);
 
-    let buffer = rtx(world, IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL, DEPTH)?;
+    let buffer = rtx(scene, IMAGE_WIDTH, IMAGE_HEIGHT, SAMPLES_PER_PIXEL, DEPTH)?;
 
     buffer.save("image.ppm")?;
 

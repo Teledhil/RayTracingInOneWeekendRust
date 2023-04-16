@@ -9,12 +9,12 @@ use crate::point3::Point3;
 use crate::sphere::Sphere;
 use crate::vec3::{Length, Random, RandomRanged, Vec3};
 
-pub struct World {
+pub struct Scene {
     camera: Camera,
     world: HittableList,
 }
 
-impl World {
+impl Scene {
     pub fn camera(&self) -> &Camera {
         &self.camera
     }

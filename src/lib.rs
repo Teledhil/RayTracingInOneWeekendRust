@@ -14,17 +14,17 @@ mod material;
 mod metal;
 mod point3;
 mod ray;
+pub mod scene;
 mod sphere;
 mod vec3;
-pub mod world;
 
 use crate::buffer::Buffer;
 use crate::color::{Color, BLACK, WHITE};
 use crate::hittable::Hittable;
 use crate::hittable_list::HittableList;
 use crate::ray::Ray;
+use crate::scene::Scene;
 use crate::vec3::{mul_add, SquareRoot, Unit};
-use crate::world::World;
 
 fn ray_color(r: &Ray, world: &HittableList, depth: i8) -> Color {
     if depth <= 0 {
@@ -51,7 +51,7 @@ fn ray_color(r: &Ray, world: &HittableList, depth: i8) -> Color {
 }
 
 pub fn rtx(
-    world: World,
+    scene: Scene,
     image_width: usize,
     image_height: usize,
     samples_per_pixel: u16,
@@ -83,7 +83,7 @@ pub fn rtx(
                     if let Ok(height) = message {
                         let mut line = buffer.get_line();
                         rtx_line(
-                            &world,
+                            &scene,
                             image_width,
                             image_height,
                             samples_per_pixel,
@@ -121,7 +121,7 @@ pub fn rtx(
 }
 
 fn rtx_line(
-    world: &World,
+    scene: &Scene,
     image_width: usize,
     image_height: usize,
     samples_per_pixel: u16,
@@ -135,8 +135,8 @@ fn rtx_line(
             let u: f64 = (width as f64 + fastrand::f64()) / (image_width as f64 - 1_f64);
             let v: f64 = (height as f64 + fastrand::f64()) / (image_height as f64 - 1_f64);
 
-            let ray = world.camera().get_ray(u, v);
-            let sample_pixel_color = ray_color(&ray, world.world(), depth);
+            let ray = scene.camera().get_ray(u, v);
+            let sample_pixel_color = ray_color(&ray, scene.world(), depth);
             pixel_color += sample_pixel_color;
         }
 
