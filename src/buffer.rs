@@ -12,6 +12,7 @@ pub struct Buffer {
     width: usize,
     height: usize,
     data: Mutex<Vec<Vec<Color>>>,
+    // Stats
     leased_lines: AtomicUsize,
     returned_lines: AtomicUsize,
 }
@@ -48,21 +49,28 @@ impl Buffer {
     }
 
     pub fn save(&self, filename: &str) -> anyhow::Result<()> {
+        print!("Encoding colors... ");
+        std::io::stdout().flush().unwrap();
+
+        let mut data_vec = Vec::new();
+        let data = self.data.lock().unwrap();
+        for height in (0..self.height).rev() {
+            let line = &data[height];
+            for pixel_color in line.iter().take(self.width) {
+                write!(data_vec, "{pixel_color}")?;
+            }
+        }
+        println!("Ok");
+
         print!("Saving buffer... ");
         std::io::stdout().flush().unwrap();
 
         let mut f = File::create(filename)?;
         write!(&mut f, "P3\n{} {}\n256\n", self.width, self.height)?;
-
-        let data = self.data.lock().unwrap();
-        for height in (0..self.height).rev() {
-            let line = &data[height];
-            for pixel_color in line.iter().take(self.width) {
-                write!(f, "{pixel_color}")?;
-            }
-        }
+        f.write_all(&data_vec)?;
 
         println!("Ok");
+
         Ok(())
     }
 

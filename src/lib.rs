@@ -140,6 +140,7 @@ fn rtx_line(
             pixel_color += sample_pixel_color;
         }
 
+        // Divide the color by the number of samples and gamma-correct for gamma=2.0.
         let calibrated_pixel_color = (pixel_color / samples_per_pixel as f64).square_root();
         line.push(calibrated_pixel_color);
     }
