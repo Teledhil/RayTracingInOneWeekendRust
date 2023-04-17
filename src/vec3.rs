@@ -425,17 +425,11 @@ macro_rules! random_unit_sphere_impl {
     ($($t:ty)*) => ($(
         impl RandomUnitSphere for PrivVec3<$t> {
             fn random_unit_sphere() -> Self {
-                let mut max_loop = 30;
                 loop {
-                    max_loop -= 1;
                     const RANGE:std::ops::Range<$t> = -1 as $t..1 as $t;
                     let candidate = Self::random_ranged(&RANGE);
                     if candidate.length_squared() < 1 as $t {
                         return candidate;
-                    }
-                    if max_loop <= 0 {
-                        panic!("Failed to generate random unit sphere.\ncandidate: {candidate:#?}\nlength_square: {}",
-                            candidate.length_squared());
                     }
                 }
             }
@@ -474,9 +468,7 @@ macro_rules! random_unit_disk_impl {
     ($($t:ident)*) => ($(
         impl RandomUnitDisk for PrivVec3<$t> {
             fn random_unit_disk() -> Self {
-                let mut max_loop = 30;
                 loop {
-                    max_loop -= 1;
                     const RANGE:std::ops::Range<$t> = -1 as $t..1 as $t;
                     let p = Self::new(
                         $t::random_ranged(&RANGE),
@@ -484,10 +476,6 @@ macro_rules! random_unit_disk_impl {
                         0 as $t);
                     if p.length_squared() < (1 as $t) {
                         return p;
-                    }
-                    if max_loop <= 0 {
-                        panic!("Failed to generate random unit disk.\ncandidate: {p:#?}\nlength_square: {}",
-                            p.length_squared());
                     }
                 }
             }
