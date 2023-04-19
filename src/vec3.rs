@@ -177,17 +177,23 @@ impl<T: Mul + Mul<Output = T> + Copy> MulAssign<T> for PrivVec3<T> {
 }
 
 // v_0 = v_1 / T
-impl<T: Div + Div<Output = T> + Copy> Div<T> for PrivVec3<T> {
-    type Output = PrivVec3<T>;
+macro_rules! div_impl {
+    ($($t:ty)*) => ($(
+        impl Div<$t> for PrivVec3<$t> {
+            type Output = PrivVec3<$t>;
 
-    fn div(self, value: T) -> Self::Output {
-        let e1 = self.e[0] / value;
-        let e2 = self.e[1] / value;
-        let e3 = self.e[2] / value;
+            fn div(self, value: $t) -> Self::Output {
+                let e1 = self.e[0] / value;
+                let e2 = self.e[1] / value;
+                let e3 = self.e[2] / value;
 
-        Self::new(e1, e2, e3)
-    }
+                Self::new(e1, e2, e3)
+            }
+        }
+        forward_ref_binop! { impl Div, div for PrivVec3<$t>, $t }
+    )*)
 }
+div_impl! { f32 f64 }
 
 // v_0 /= T
 impl<T: Div + Div<Output = T> + Copy> DivAssign<T> for PrivVec3<T> {
