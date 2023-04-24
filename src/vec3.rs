@@ -172,15 +172,21 @@ impl Mul<PrivVec3<f32>> for f32 {
 forward_ref_binop! { impl Mul, mul for f32, PrivVec3<f32> }
 
 // v_0 *= T
-impl<T: Mul + Mul<Output = T> + Copy> MulAssign<T> for PrivVec3<T> {
-    fn mul_assign(&mut self, value: T) {
-        let e1 = self.e[0] * value;
-        let e2 = self.e[1] * value;
-        let e3 = self.e[2] * value;
+macro_rules! mul_assign_impl {
+    ($($t:ty)*) => ($(
+        impl MulAssign<$t> for PrivVec3<$t> {
+            fn mul_assign(&mut self, value: $t) {
+                let e1 = self.e[0] * value;
+                let e2 = self.e[1] * value;
+                let e3 = self.e[2] * value;
 
-        *self = Self::new(e1, e2, e3);
-    }
+                *self = Self::new(e1, e2, e3);
+            }
+        }
+        forward_ref_op_assign! { impl MulAssign, mul_assign for PrivVec3<$t>, $t }
+    )*)
 }
+mul_assign_impl! { f32 f64 }
 
 // v_0 = v_1 / T
 macro_rules! div_impl {
