@@ -49,9 +49,9 @@ macro_rules! add_impl {
             type Output = Self;
 
             fn add (self, other: Self) -> Self::Output {
-                let e1 = self.e[0] + other.e[0];
-                let e2 = self.e[1] + other.e[1];
-                let e3 = self.e[2] + other.e[2];
+                let e1 = self.x() + other.x();
+                let e2 = self.y() + other.y();
+                let e3 = self.z() + other.z();
 
                 Self::Output::new(e1, e2, e3)
             }
@@ -66,9 +66,9 @@ macro_rules! add_assign_impl {
     ($($t:ty)*) => ($(
         impl AddAssign for PrivVec3<$t> {
             fn add_assign(&mut self, other: PrivVec3<$t>) {
-                let e1 = self.e[0] + other.e[0];
-                let e2 = self.e[1] + other.e[1];
-                let e3 = self.e[2] + other.e[2];
+                let e1 = self.x() + other.x();
+                let e2 = self.y() + other.y();
+                let e3 = self.z() + other.z();
 
                 *self = Self::new(e1, e2, e3);
             }
@@ -85,9 +85,9 @@ macro_rules! sub_impl {
             type Output = Self;
 
             fn sub(self, other: Self) -> Self::Output {
-                let e1 = self.e[0] - other.e[0];
-                let e2 = self.e[1] - other.e[1];
-                let e3 = self.e[2] - other.e[2];
+                let e1 = self.x() - other.x();
+                let e2 = self.y() - other.y();
+                let e3 = self.z() - other.z();
 
                 Self::Output::new(e1, e2, e3)
             }
@@ -119,9 +119,9 @@ macro_rules! mul_impl {
             type Output = Self;
 
             fn mul(self, other: Self) -> Self::Output {
-                let e1 = self.e[0] * other.e[0];
-                let e2 = self.e[1] * other.e[1];
-                let e3 = self.e[2] * other.e[2];
+                let e1 = self.x() * other.x();
+                let e2 = self.y() * other.y();
+                let e3 = self.z() * other.z();
 
                 Self::Output::new(e1, e2, e3)
             }
@@ -133,9 +133,9 @@ macro_rules! mul_impl {
             type Output = PrivVec3<$t>;
 
             fn mul(self, other: PrivVec3<$t>) -> Self::Output {
-                let e1 = self * other.e[0];
-                let e2 = self * other.e[1];
-                let e3 = self * other.e[2];
+                let e1 = self * other.x();
+                let e2 = self * other.y();
+                let e3 = self * other.z();
 
                 Self::Output::new(e1, e2, e3)
             }
@@ -160,9 +160,9 @@ macro_rules! mul_assign_impl {
     ($($t:ty)*) => ($(
         impl MulAssign<$t> for PrivVec3<$t> {
             fn mul_assign(&mut self, value: $t) {
-                let e1 = self.e[0] * value;
-                let e2 = self.e[1] * value;
-                let e3 = self.e[2] * value;
+                let e1 = self.x() * value;
+                let e2 = self.y() * value;
+                let e3 = self.z() * value;
 
                 *self = Self::new(e1, e2, e3);
             }
@@ -179,9 +179,9 @@ macro_rules! div_impl {
             type Output = Self;
 
             fn div(self, value: $t) -> Self::Output {
-                let e1 = self.e[0] / value;
-                let e2 = self.e[1] / value;
-                let e3 = self.e[2] / value;
+                let e1 = self.x() / value;
+                let e2 = self.y() / value;
+                let e3 = self.z() / value;
 
                 Self::new(e1, e2, e3)
             }
@@ -196,9 +196,9 @@ macro_rules! div_assign_impl {
     ($($t:ty)*) => ($(
         impl DivAssign<$t> for PrivVec3<$t> {
             fn div_assign(&mut self, value: $t) {
-                let e1 = self.e[0] / value;
-                let e2 = self.e[1] / value;
-                let e3 = self.e[2] / value;
+                let e1 = self.x() / value;
+                let e2 = self.y() / value;
+                let e3 = self.z() / value;
 
                 *self = Self::new(e1, e2, e3);
             }
@@ -309,8 +309,8 @@ macro_rules! dot_impl {
         impl Dot for PrivVec3<$t> {
             type Output = $t;
             fn dot(self, other: Self) -> Self::Output {
-                // a[0]*b[0] + a[1]*b[1] + a[2]*b[2]
-                self.e[0].mul_add(other.e[0], self.e[1].mul_add(other.e[1], self.e[2]*other.e[2]))
+                // a.x()*b.x() + a.y()*b.y() + a.z()*b.z()
+                self.x().mul_add(other.x(), self.y().mul_add(other.y(), self.z()*other.z()))
             }
         }
         forward_ref_binop! { impl Dot, dot for PrivVec3<$t>, PrivVec3<$t> }
@@ -330,12 +330,12 @@ impl Cross for Vec3 {
     type Output = Self;
 
     fn cross(self, other: Self) -> Self::Output {
-        // e[0] = a[1]*b[2] - a[2]*b[1]
-        let e0 = self.e[1].mul_add(other.e[2], -self.e[2] * other.e[1]);
-        // e[1] = a[2]*b[0] - a[0]*b[2]
-        let e1 = self.e[2].mul_add(other.e[0], -self.e[0] * other.e[2]);
-        // e[2] = a[0]*b[1] - a[1]*b[0]
-        let e2 = self.e[0].mul_add(other.e[1], -self.e[1] * other.e[0]);
+        // e.x() = a.y()*b.z() - a.z()*b.y()
+        let e0 = self.y().mul_add(other.z(), -self.z() * other.y());
+        // e.y() = a.z()*b.x() - a.x()*b.z()
+        let e1 = self.z().mul_add(other.x(), -self.x() * other.z());
+        // e.z() = a.x()*b.y() - a.y()*b.x()
+        let e2 = self.x().mul_add(other.y(), -self.y() * other.x());
 
         Self::Output::new(e0, e1, e2)
     }
@@ -482,7 +482,7 @@ macro_rules! near_zero_impl {
         impl Zero for PrivVec3<$t> {
             fn is_zero(&self) -> bool {
                 const ZERO: $t = 0 as $t;
-                self.e[0] == ZERO && self.e[1] == ZERO && self.e[2] == ZERO
+                self.x() == ZERO && self.y() == ZERO && self.z() == ZERO
             }
         }
     )*)
@@ -498,7 +498,7 @@ macro_rules! near_zero_impl {
         impl NearZero for PrivVec3<$t> {
             fn is_near_zero(&self) -> bool {
                 const ALMOST_ZERO: $t = 0.000000000001;
-                self.e[0] < ALMOST_ZERO && self.e[1] < ALMOST_ZERO && self.e[2] < ALMOST_ZERO
+                self.x() < ALMOST_ZERO && self.y() < ALMOST_ZERO && self.z() < ALMOST_ZERO
             }
         }
     )*)
