@@ -104,14 +104,19 @@ macro_rules! sub_impl {
 sub_impl! { f32 f64 }
 
 // v_0 = -v_1
-impl<T: Neg + Neg<Output = T> + Copy> Neg for PrivVec3<T> {
-    type Output = Self;
+macro_rules! neg_impl {
+    ($($t:ty)*) => ($(
+        impl Neg for PrivVec3<$t> {
+            type Output = Self;
 
-    fn neg(self) -> Self::Output {
-        Self::Output::new(-self.x(), -self.y(), -self.z())
-    }
+            fn neg(self) -> Self::Output {
+                Self::Output::new(-self.x(), -self.y(), -self.z())
+            }
+        }
+        forward_ref_unop! { impl Neg, neg for PrivVec3<$t> }
+    )*)
 }
-forward_ref_unop! { impl Neg, neg for Vec3 }
+neg_impl! { f32 f64 }
 
 // v[]
 impl<T> Index<Coordinate> for PrivVec3<T> {
