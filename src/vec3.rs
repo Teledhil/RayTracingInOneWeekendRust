@@ -160,22 +160,19 @@ macro_rules! mul_impl {
             }
         }
         forward_ref_binop! { impl Mul, mul for $t, PrivVec3<$t> }
+
+        // v_0 = v_1 * T
+        impl Mul<$t> for PrivVec3<$t> {
+            type Output = Self;
+
+            fn mul(self, other: $t) -> Self::Output {
+                other * self
+            }
+        }
+        forward_ref_binop! { impl Mul, mul for PrivVec3<$t>, $t }
     )*)
 }
 mul_impl! { f32 f64 }
-
-// v_0 = v_1 * T
-impl<T: Mul + Mul<Output = T> + Copy> Mul<T> for PrivVec3<T> {
-    type Output = Self;
-
-    fn mul(self, other: T) -> Self::Output {
-        let e1 = self.e[0] * other;
-        let e2 = self.e[1] * other;
-        let e3 = self.e[2] * other;
-
-        Self::Output::new(e1, e2, e3)
-    }
-}
 
 // v_0 *= T
 macro_rules! mul_assign_impl {
