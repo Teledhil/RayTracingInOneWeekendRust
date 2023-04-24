@@ -63,15 +63,21 @@ impl<T: Add + Add<Output = T> + Copy> Add for PrivVec3<T> {
 forward_ref_binop! { impl Add, add for Vec3, Vec3 }
 
 // v_0 += v_1
-impl<T: Add + Add<Output = T> + Copy> AddAssign for PrivVec3<T> {
-    fn add_assign(&mut self, other: Self) {
-        let e1 = self.e[0] + other.e[0];
-        let e2 = self.e[1] + other.e[1];
-        let e3 = self.e[2] + other.e[2];
+macro_rules! add_assign_impl {
+    ($($t:ty)*) => ($(
+        impl AddAssign for PrivVec3<$t> {
+            fn add_assign(&mut self, other: PrivVec3<$t>) {
+                let e1 = self.e[0] + other.e[0];
+                let e2 = self.e[1] + other.e[1];
+                let e3 = self.e[2] + other.e[2];
 
-        *self = Self::new(e1, e2, e3);
-    }
+                *self = Self::new(e1, e2, e3);
+            }
+        }
+        forward_ref_op_assign! { impl AddAssign, add_assign for PrivVec3<$t>, PrivVec3<$t> }
+    )*)
 }
+add_assign_impl! { f32 f64 }
 
 // v_0 = v_1 - v_2
 impl<T: Sub + Sub<Output = T> + Copy> Sub for PrivVec3<T> {
