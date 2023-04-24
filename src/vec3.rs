@@ -237,17 +237,6 @@ pub trait SquareRoot {
 
 macro_rules! square_root_impl {
     ($($t:ty)*) => ($(
-        impl SquareRoot for $t {
-            type Output = $t;
-
-            fn square_root(self) -> $t { self.sqrt() }
-        }
-        forward_ref_unop! { impl SquareRoot, square_root for $t }
-    )*)
-}
-square_root_impl! { f32 f64 }
-macro_rules! square_root_vec_impl {
-    ($($t:ty)*) => ($(
         impl SquareRoot for PrivVec3<$t> {
             type Output = PrivVec3<$t>;
 
@@ -258,7 +247,7 @@ macro_rules! square_root_vec_impl {
         forward_ref_unop! { impl SquareRoot, square_root for PrivVec3<$t> }
     )*)
 }
-square_root_vec_impl! { f32 f64 }
+square_root_impl! { f32 f64 }
 
 // LengthSquared
 //
@@ -296,7 +285,7 @@ macro_rules! length_impl {
             type Output = $t;
 
             fn length(self) -> Self::Output {
-                self.length_squared().square_root()
+                self.length_squared().sqrt()
             }
         }
         forward_ref_unop! { impl Length, length for PrivVec3<$t> }
