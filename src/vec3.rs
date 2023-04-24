@@ -131,9 +131,9 @@ impl<T> Index<Coordinate> for PrivVec3<T> {
     }
 }
 
-// v_0 = v_1 * v_2
 macro_rules! mul_impl {
     ($($t:ty)*) => ($(
+        // v_0 = v_1 * v_2
         impl Mul for PrivVec3<$t> {
             type Output = Self;
 
@@ -146,6 +146,20 @@ macro_rules! mul_impl {
             }
         }
         forward_ref_binop! { impl Mul, mul for PrivVec3<$t>, PrivVec3<$t> }
+
+        // v_0 = T * v_1
+        impl Mul<PrivVec3<$t>> for $t {
+            type Output = PrivVec3<$t>;
+
+            fn mul(self, other: PrivVec3<$t>) -> Self::Output {
+                let e1 = self * other.e[0];
+                let e2 = self * other.e[1];
+                let e3 = self * other.e[2];
+
+                Self::Output::new(e1, e2, e3)
+            }
+        }
+        forward_ref_binop! { impl Mul, mul for $t, PrivVec3<$t> }
     )*)
 }
 mul_impl! { f32 f64 }
@@ -162,34 +176,6 @@ impl<T: Mul + Mul<Output = T> + Copy> Mul<T> for PrivVec3<T> {
         Self::Output::new(e1, e2, e3)
     }
 }
-
-// v_0 = f64 * v_1
-impl Mul<PrivVec3<f64>> for f64 {
-    type Output = PrivVec3<f64>;
-
-    fn mul(self, other: PrivVec3<f64>) -> Self::Output {
-        let e1 = self * other.e[0];
-        let e2 = self * other.e[1];
-        let e3 = self * other.e[2];
-
-        Self::Output::new(e1, e2, e3)
-    }
-}
-forward_ref_binop! { impl Mul, mul for f64, Vec3 }
-
-// v_0 = f32 * v_1
-impl Mul<PrivVec3<f32>> for f32 {
-    type Output = PrivVec3<f32>;
-
-    fn mul(self, other: PrivVec3<f32>) -> Self::Output {
-        let e1 = self * other.e[0];
-        let e2 = self * other.e[1];
-        let e3 = self * other.e[2];
-
-        Self::Output::new(e1, e2, e3)
-    }
-}
-forward_ref_binop! { impl Mul, mul for f32, PrivVec3<f32> }
 
 // v_0 *= T
 macro_rules! mul_assign_impl {
