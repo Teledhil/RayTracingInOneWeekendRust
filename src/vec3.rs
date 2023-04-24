@@ -49,18 +49,23 @@ impl<T: Default + Copy> Default for PrivVec3<T> {
 }
 
 // v_0 = v_1 + v_2
-impl<T: Add + Add<Output = T> + Copy> Add for PrivVec3<T> {
-    type Output = Self;
+macro_rules! add_impl {
+    ($($t:ty)*) => ($(
+        impl Add for PrivVec3<$t> {
+            type Output = Self;
 
-    fn add(self, other: Self) -> Self::Output {
-        let e1 = self.e[0] + other.e[0];
-        let e2 = self.e[1] + other.e[1];
-        let e3 = self.e[2] + other.e[2];
+            fn add (self, other: Self) -> Self::Output {
+                let e1 = self.e[0] + other.e[0];
+                let e2 = self.e[1] + other.e[1];
+                let e3 = self.e[2] + other.e[2];
 
-        Self::Output::new(e1, e2, e3)
-    }
+                Self::Output::new(e1, e2, e3)
+            }
+        }
+        forward_ref_binop! { impl Add, add for PrivVec3<$t>, PrivVec3<$t> }
+    )*)
 }
-forward_ref_binop! { impl Add, add for Vec3, Vec3 }
+add_impl! { f32 f64 }
 
 // v_0 += v_1
 macro_rules! add_assign_impl {
