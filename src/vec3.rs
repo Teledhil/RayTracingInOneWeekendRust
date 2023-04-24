@@ -227,26 +227,6 @@ macro_rules! div_assign_impl {
 }
 div_assign_impl! { f32 f64 }
 
-// Pow2
-//
-trait Pow2 {
-    type Output;
-
-    fn pow_2(self) -> Self::Output;
-}
-
-macro_rules! pow_2_impl {
-    ($($t:ty)*) => ($(
-        impl Pow2 for $t {
-            type Output = $t;
-
-            fn pow_2(self) -> $t { self.powi(2) }
-        }
-        forward_ref_unop! { impl Pow2, pow_2 for $t }
-    )*)
-}
-pow_2_impl! { f32 f64 }
-
 // SquareRoot
 //
 pub trait SquareRoot {
@@ -294,7 +274,7 @@ macro_rules! length_squared_impl {
             type Output = $t;
 
             fn length_squared(self) -> Self::Output {
-                self.x().pow_2() + self.y().pow_2() + self.z().pow_2()
+                self.x().powi(2) + self.y().powi(2) + self.z().powi(2)
             }
         }
         forward_ref_unop! { impl LengthSquared, length_squared for PrivVec3<$t> }
