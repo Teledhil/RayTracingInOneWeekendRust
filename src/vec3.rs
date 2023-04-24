@@ -132,18 +132,23 @@ impl<T> Index<Coordinate> for PrivVec3<T> {
 }
 
 // v_0 = v_1 * v_2
-impl<T: Mul + Mul<Output = T> + Copy> Mul for PrivVec3<T> {
-    type Output = Self;
+macro_rules! mul_impl {
+    ($($t:ty)*) => ($(
+        impl Mul for PrivVec3<$t> {
+            type Output = Self;
 
-    fn mul(self, other: Self) -> Self::Output {
-        let e1 = self.e[0] * other.e[0];
-        let e2 = self.e[1] * other.e[1];
-        let e3 = self.e[2] * other.e[2];
+            fn mul(self, other: Self) -> Self::Output {
+                let e1 = self.e[0] * other.e[0];
+                let e2 = self.e[1] * other.e[1];
+                let e3 = self.e[2] * other.e[2];
 
-        Self::Output::new(e1, e2, e3)
-    }
+                Self::Output::new(e1, e2, e3)
+            }
+        }
+        forward_ref_binop! { impl Mul, mul for PrivVec3<$t>, PrivVec3<$t> }
+    )*)
 }
-forward_ref_binop! { impl Mul, mul for Vec3, Vec3 }
+mul_impl! { f32 f64 }
 
 // v_0 = v_1 * T
 impl<T: Mul + Mul<Output = T> + Copy> Mul<T> for PrivVec3<T> {
