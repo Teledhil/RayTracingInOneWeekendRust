@@ -195,7 +195,7 @@ mul_assign_impl! { f32 f64 }
 macro_rules! div_impl {
     ($($t:ty)*) => ($(
         impl Div<$t> for PrivVec3<$t> {
-            type Output = PrivVec3<$t>;
+            type Output = Self;
 
             fn div(self, value: $t) -> Self::Output {
                 let e1 = self.e[0] / value;
@@ -238,7 +238,7 @@ pub trait SquareRoot {
 macro_rules! square_root_impl {
     ($($t:ty)*) => ($(
         impl SquareRoot for PrivVec3<$t> {
-            type Output = PrivVec3<$t>;
+            type Output = Self;
 
             fn square_root(self) -> PrivVec3<$t> {
                 Self::new ( self.x().sqrt(), self.y().sqrt(), self.z().sqrt())
@@ -304,7 +304,7 @@ pub trait Unit {
 macro_rules! unit_impl {
     ($($t:ty)*) => ($(
         impl Unit for PrivVec3<$t> {
-            type Output = PrivVec3<$t>;
+            type Output = Self;
 
             fn unit(self) -> Self::Output {
                 self / self.length()
@@ -388,7 +388,7 @@ pub trait RandomRanged {
 macro_rules! random_ranged_impl {
     ($($t:ident)*) => ($(
         impl RandomRanged for $t {
-            type RangeType = $t;
+            type RangeType = Self;
 
             fn random_ranged(range: &std::ops::Range<Self::RangeType>) -> Self {
                 // range.start + (range.end - range.start) * fastrand::$t()
@@ -434,7 +434,7 @@ macro_rules! random_unit_sphere_impl {
 }
 random_unit_sphere_impl! { f32 f64 }
 
-// RandomInhemisphere
+// RandomInHemisphere
 //
 pub trait RandomInHemisphere {
     fn random_in_hemisphere(normal: &Self) -> Self;
@@ -533,7 +533,7 @@ pub trait Reflect<Rhs = Self> {
 macro_rules! reflect_impl {
     ($($t:ty)*) => ($(
         impl Reflect for PrivVec3<$t> {
-            type Output = PrivVec3<$t>;
+            type Output = Self;
 
             fn reflect(self, normal: Self) -> Self::Output {
                 let unit = self.unit();
