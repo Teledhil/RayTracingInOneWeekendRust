@@ -1,12 +1,6 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Index, Mul, MulAssign, Neg, Sub};
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
 
 use crate::dark_magic::{forward_ref_binop, forward_ref_op_assign, forward_ref_unop};
-
-pub enum Coordinate {
-    X,
-    Y,
-    Z,
-}
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 pub struct PrivVec3<T> {
@@ -117,19 +111,6 @@ macro_rules! neg_impl {
     )*)
 }
 neg_impl! { f32 f64 }
-
-// v[]
-impl<T> Index<Coordinate> for PrivVec3<T> {
-    type Output = T;
-
-    fn index(&self, coord: Coordinate) -> &Self::Output {
-        match coord {
-            Coordinate::X => &self.e[0],
-            Coordinate::Y => &self.e[1],
-            Coordinate::Z => &self.e[2],
-        }
-    }
-}
 
 macro_rules! mul_impl {
     ($($t:ty)*) => ($(
