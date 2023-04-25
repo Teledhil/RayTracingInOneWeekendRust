@@ -1,6 +1,5 @@
 #![cfg_attr(feature = "simd", feature(portable_simd))]
 
-use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
 mod buffer;
@@ -67,16 +66,6 @@ pub fn rtx(
 ) -> anyhow::Result<Buffer> {
     let buffer = Buffer::new(image_width, image_height);
 
-    let (sender, receiver) = mpsc::channel();
-
-    for height in (0..image_height).rev() {
-        if let Err(e) = sender.send(height) {
-            panic!("Failed to send line number {height}: {e}");
-        }
-    }
-    drop(sender);
-
-    let receiver = Arc::new(Mutex::new(receiver));
     let num_threads = std::thread::available_parallelism()?.get();
     println!("Spawning {num_threads} threads");
     thread::scope(|s| {
@@ -87,9 +76,7 @@ pub fn rtx(
             let thread = s.spawn(|| {
                 let mut lines_drawed = 0;
                 loop {
-                    let message = receiver.lock().unwrap().recv();
-                    if let Ok(height) = message {
-                        let mut line = buffer.get_line();
+                    if let Some((height, mut line)) = buffer.get_line() {
                         rtx_line(
                             &scene,
                             image_width,
