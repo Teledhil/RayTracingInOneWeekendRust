@@ -1,3 +1,5 @@
+#![cfg_attr(feature = "simd", feature(portable_simd))]
+
 use std::sync::{mpsc, Arc, Mutex};
 use std::thread;
 
@@ -18,13 +20,19 @@ pub mod scene;
 mod sphere;
 mod vec3;
 
+#[cfg(feature = "simd")]
+mod simd_vec3;
+
+#[cfg(not(feature = "simd"))]
+mod scalar_vec3;
+
 use crate::buffer::Buffer;
 use crate::color::{Color, BLACK, WHITE};
 use crate::hittable::Hittable;
 use crate::hittable_list::HittableList;
 use crate::ray::Ray;
 use crate::scene::Scene;
-use crate::vec3::{mul_add, SquareRoot, Unit};
+use crate::vec3::{MulAdd, SquareRoot, Unit};
 
 fn ray_color(r: &Ray, world: &HittableList, depth: i8) -> Color {
     if depth <= 0 {
@@ -47,7 +55,7 @@ fn ray_color(r: &Ray, world: &HittableList, depth: i8) -> Color {
     let t = 0.5 * (unit_direction.y() + 1.0);
 
     // (1.0 - t) * WHITE + t * Color::new(0.5, 0.7, 1.0)
-    mul_add(&WHITE, 1.0 - t, &(t * Color::new(0.5, 0.7, 1.0)))
+    WHITE.mul_add(1.0 - t, t * Color::new(0.5, 0.7, 1.0))
 }
 
 pub fn rtx(

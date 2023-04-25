@@ -1,212 +1,18 @@
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Neg, Sub};
+use crate::dark_magic::{forward_ref_binop, forward_ref_unop};
 
-use crate::dark_magic::{forward_ref_binop, forward_ref_op_assign, forward_ref_unop};
+#[cfg(not(feature = "simd"))]
+use crate::scalar_vec3::ScalarVec3;
 
-#[derive(PartialEq, Debug, Copy, Clone)]
-pub struct PrivVec3<T> {
-    e: [T; 3],
-}
+#[cfg(feature = "simd")]
+use crate::simd_vec3::SimdVec3;
+
+#[cfg(not(feature = "simd"))]
+pub type PrivVec3<T> = ScalarVec3<T>;
+
+#[cfg(feature = "simd")]
+pub type PrivVec3<T> = SimdVec3<T>;
 
 pub type Vec3 = PrivVec3<f64>;
-
-impl<T: Copy> PrivVec3<T> {
-    pub fn new(e1: T, e2: T, e3: T) -> Self {
-        let e: [T; 3] = [e1, e2, e3];
-
-        Self { e }
-    }
-
-    pub fn x(&self) -> T {
-        self.e[0]
-    }
-
-    pub fn y(&self) -> T {
-        self.e[1]
-    }
-
-    pub fn z(&self) -> T {
-        self.e[2]
-    }
-
-    pub const fn const_new(e1: T, e2: T, e3: T) -> Self {
-        let e: [T; 3] = [e1, e2, e3];
-        Self { e }
-    }
-}
-
-// Default
-//
-impl<T: Default + Copy> Default for PrivVec3<T> {
-    fn default() -> Self {
-        Self::new(T::default(), T::default(), T::default())
-    }
-}
-
-// v_0 = v_1 + v_2
-macro_rules! add_impl {
-    ($($t:ty)*) => ($(
-        impl Add for PrivVec3<$t> {
-            type Output = Self;
-
-            fn add (self, other: Self) -> Self::Output {
-                let e1 = self.x() + other.x();
-                let e2 = self.y() + other.y();
-                let e3 = self.z() + other.z();
-
-                Self::Output::new(e1, e2, e3)
-            }
-        }
-        forward_ref_binop! { impl Add, add for PrivVec3<$t>, PrivVec3<$t> }
-    )*)
-}
-add_impl! { f32 f64 }
-
-// v_0 += v_1
-macro_rules! add_assign_impl {
-    ($($t:ty)*) => ($(
-        impl AddAssign for PrivVec3<$t> {
-            fn add_assign(&mut self, other: PrivVec3<$t>) {
-                let e1 = self.x() + other.x();
-                let e2 = self.y() + other.y();
-                let e3 = self.z() + other.z();
-
-                *self = Self::new(e1, e2, e3);
-            }
-        }
-        forward_ref_op_assign! { impl AddAssign, add_assign for PrivVec3<$t>, PrivVec3<$t> }
-    )*)
-}
-add_assign_impl! { f32 f64 }
-
-// v_0 = v_1 - v_2
-macro_rules! sub_impl {
-    ($($t:ty)*) => ($(
-        impl Sub for PrivVec3<$t> {
-            type Output = Self;
-
-            fn sub(self, other: Self) -> Self::Output {
-                let e1 = self.x() - other.x();
-                let e2 = self.y() - other.y();
-                let e3 = self.z() - other.z();
-
-                Self::Output::new(e1, e2, e3)
-            }
-        }
-        forward_ref_binop! { impl Sub, sub for PrivVec3<$t>, PrivVec3<$t> }
-    )*)
-}
-sub_impl! { f32 f64 }
-
-// v_0 = -v_1
-macro_rules! neg_impl {
-    ($($t:ty)*) => ($(
-        impl Neg for PrivVec3<$t> {
-            type Output = Self;
-
-            fn neg(self) -> Self::Output {
-                Self::Output::new(-self.x(), -self.y(), -self.z())
-            }
-        }
-        forward_ref_unop! { impl Neg, neg for PrivVec3<$t> }
-    )*)
-}
-neg_impl! { f32 f64 }
-
-macro_rules! mul_impl {
-    ($($t:ty)*) => ($(
-        // v_0 = v_1 * v_2
-        impl Mul for PrivVec3<$t> {
-            type Output = Self;
-
-            fn mul(self, other: Self) -> Self::Output {
-                let e1 = self.x() * other.x();
-                let e2 = self.y() * other.y();
-                let e3 = self.z() * other.z();
-
-                Self::Output::new(e1, e2, e3)
-            }
-        }
-        forward_ref_binop! { impl Mul, mul for PrivVec3<$t>, PrivVec3<$t> }
-
-        // v_0 = T * v_1
-        impl Mul<PrivVec3<$t>> for $t {
-            type Output = PrivVec3<$t>;
-
-            fn mul(self, other: PrivVec3<$t>) -> Self::Output {
-                let e1 = self * other.x();
-                let e2 = self * other.y();
-                let e3 = self * other.z();
-
-                Self::Output::new(e1, e2, e3)
-            }
-        }
-        forward_ref_binop! { impl Mul, mul for $t, PrivVec3<$t> }
-
-        // v_0 = v_1 * T
-        impl Mul<$t> for PrivVec3<$t> {
-            type Output = Self;
-
-            fn mul(self, other: $t) -> Self::Output {
-                other * self
-            }
-        }
-        forward_ref_binop! { impl Mul, mul for PrivVec3<$t>, $t }
-    )*)
-}
-mul_impl! { f32 f64 }
-
-// v_0 *= T
-macro_rules! mul_assign_impl {
-    ($($t:ty)*) => ($(
-        impl MulAssign<$t> for PrivVec3<$t> {
-            fn mul_assign(&mut self, value: $t) {
-                let e1 = self.x() * value;
-                let e2 = self.y() * value;
-                let e3 = self.z() * value;
-
-                *self = Self::new(e1, e2, e3);
-            }
-        }
-        forward_ref_op_assign! { impl MulAssign, mul_assign for PrivVec3<$t>, $t }
-    )*)
-}
-mul_assign_impl! { f32 f64 }
-
-// v_0 = v_1 / T
-macro_rules! div_impl {
-    ($($t:ty)*) => ($(
-        impl Div<$t> for PrivVec3<$t> {
-            type Output = Self;
-
-            fn div(self, value: $t) -> Self::Output {
-                let e1 = self.x() / value;
-                let e2 = self.y() / value;
-                let e3 = self.z() / value;
-
-                Self::new(e1, e2, e3)
-            }
-        }
-        forward_ref_binop! { impl Div, div for PrivVec3<$t>, $t }
-    )*)
-}
-div_impl! { f32 f64 }
-
-// v_0 /= T
-macro_rules! div_assign_impl {
-    ($($t:ty)*) => ($(
-        impl DivAssign<$t> for PrivVec3<$t> {
-            fn div_assign(&mut self, value: $t) {
-                let e1 = self.x() / value;
-                let e2 = self.y() / value;
-                let e3 = self.z() / value;
-
-                *self = Self::new(e1, e2, e3);
-            }
-        }
-        forward_ref_op_assign! { impl DivAssign, div_assign for PrivVec3<$t>, $t }
-    )*)
-}
-div_assign_impl! { f32 f64 }
 
 // SquareRoot
 //
@@ -216,20 +22,6 @@ pub trait SquareRoot {
     fn square_root(self) -> Self::Output;
 }
 
-macro_rules! square_root_impl {
-    ($($t:ty)*) => ($(
-        impl SquareRoot for PrivVec3<$t> {
-            type Output = Self;
-
-            fn square_root(self) -> PrivVec3<$t> {
-                Self::new ( self.x().sqrt(), self.y().sqrt(), self.z().sqrt())
-            }
-        }
-        forward_ref_unop! { impl SquareRoot, square_root for PrivVec3<$t> }
-    )*)
-}
-square_root_impl! { f32 f64 }
-
 // LengthSquared
 //
 pub trait LengthSquared {
@@ -237,20 +29,6 @@ pub trait LengthSquared {
 
     fn length_squared(self) -> Self::Output;
 }
-
-macro_rules! length_squared_impl {
-    ($($t:ty)*) => ($(
-        impl LengthSquared for PrivVec3<$t> {
-            type Output = $t;
-
-            fn length_squared(self) -> Self::Output {
-                self.x().powi(2) + self.y().powi(2) + self.z().powi(2)
-            }
-        }
-        forward_ref_unop! { impl LengthSquared, length_squared for PrivVec3<$t> }
-    )*)
-}
-length_squared_impl! { f32 f64 }
 
 // Length
 //
@@ -303,20 +81,6 @@ pub trait Dot<Rhs = Self> {
 
     fn dot(self, other: Rhs) -> Self::Output;
 }
-
-macro_rules! dot_impl {
-    ($($t:ty)*) => ($(
-        impl Dot for PrivVec3<$t> {
-            type Output = $t;
-            fn dot(self, other: Self) -> Self::Output {
-                // a.x()*b.x() + a.y()*b.y() + a.z()*b.z()
-                self.x().mul_add(other.x(), self.y().mul_add(other.y(), self.z()*other.z()))
-            }
-        }
-        forward_ref_binop! { impl Dot, dot for PrivVec3<$t>, PrivVec3<$t> }
-    )*)
-}
-dot_impl! { f32 f64 }
 
 // Cross
 //
@@ -473,22 +237,14 @@ impl RandomUnitVector for Vec3 {
     }
 }
 
+// Zero
+//
 pub trait Zero {
     fn is_zero(&self) -> bool;
 }
 
-macro_rules! near_zero_impl {
-    ($($t:ty)*) => ($(
-        impl Zero for PrivVec3<$t> {
-            fn is_zero(&self) -> bool {
-                const ZERO: $t = 0 as $t;
-                self.x() == ZERO && self.y() == ZERO && self.z() == ZERO
-            }
-        }
-    )*)
-}
-near_zero_impl! { f32 f64 }
-
+// NearZero
+//
 pub trait NearZero {
     fn is_near_zero(&self) -> bool;
 }
@@ -526,17 +282,17 @@ macro_rules! reflect_impl {
 }
 reflect_impl! { f32 f64 }
 
-pub fn mul_add(b: &Vec3, t: f64, a: &Vec3) -> Vec3 {
-    let e0 = b.x().mul_add(t, a.x());
-    let e1 = b.y().mul_add(t, a.y());
-    let e2 = b.z().mul_add(t, a.z());
-
-    Vec3::new(e0, e1, e2)
+// MulAdd
+//
+pub trait MulAdd<Rhs = Self> {
+    fn mul_add(self, a: Rhs, b: Self) -> Self;
 }
 
-pub fn refract(uv: &Vec3, normal: &Vec3, etai_over_etat: f64) -> Vec3 {
+// Refract
+//
+pub fn refract(uv: Vec3, normal: &Vec3, etai_over_etat: f64) -> Vec3 {
     let cos_theta = (-uv).dot(normal).min(1.0);
-    let r_out_perp = etai_over_etat * mul_add(normal, cos_theta, uv);
+    let r_out_perp = etai_over_etat * normal.mul_add(cos_theta, uv);
     let r_out_parallel = -(1.0 - r_out_perp.length_squared()).abs().sqrt() * normal;
 
     r_out_perp + r_out_parallel
