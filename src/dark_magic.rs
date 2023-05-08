@@ -44,5 +44,17 @@ macro_rules! forward_ref_unop {
     };
 }
 
+macro_rules! forward_ref_op_assign {
+    (impl $imp:ident, $method:ident for $t:ty, $u:ty) => {
+        impl $imp<&$u> for $t {
+            #[inline]
+            fn $method(&mut self, other: &$u) {
+                $imp::$method(self, *other);
+            }
+        }
+    };
+}
+
 pub(crate) use forward_ref_binop;
+pub(crate) use forward_ref_op_assign;
 pub(crate) use forward_ref_unop;

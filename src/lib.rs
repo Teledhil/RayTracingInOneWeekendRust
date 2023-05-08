@@ -1,4 +1,5 @@
-use std::sync::{mpsc, Arc, Mutex};
+#![cfg_attr(feature = "simd", feature(portable_simd))]
+
 use std::thread;
 
 mod buffer;
@@ -18,13 +19,19 @@ pub mod scene;
 mod sphere;
 mod vec3;
 
+#[cfg(feature = "simd")]
+mod simd_vec3;
+
+#[cfg(not(feature = "simd"))]
+mod scalar_vec3;
+
 use crate::buffer::Buffer;
 use crate::color::{Color, BLACK, WHITE};
 use crate::hittable::Hittable;
 use crate::hittable_list::HittableList;
 use crate::ray::Ray;
 use crate::scene::Scene;
-use crate::vec3::{mul_add, SquareRoot, Unit};
+use crate::vec3::{MulAdd, SquareRoot, Unit};
 
 fn ray_color(r: &Ray, world: &HittableList, depth: i8) -> Color {
     if depth <= 0 {
@@ -47,7 +54,7 @@ fn ray_color(r: &Ray, world: &HittableList, depth: i8) -> Color {
     let t = 0.5 * (unit_direction.y() + 1.0);
 
     // (1.0 - t) * WHITE + t * Color::new(0.5, 0.7, 1.0)
-    mul_add(&WHITE, 1.0 - t, &(t * Color::new(0.5, 0.7, 1.0)))
+    WHITE.mul_add(1.0 - t, t * Color::new(0.5, 0.7, 1.0))
 }
 
 pub fn rtx(
@@ -59,16 +66,6 @@ pub fn rtx(
 ) -> anyhow::Result<Buffer> {
     let buffer = Buffer::new(image_width, image_height);
 
-    let (sender, receiver) = mpsc::channel();
-
-    for height in (0..image_height).rev() {
-        if let Err(e) = sender.send(height) {
-            panic!("Failed to send line number {height}: {e}");
-        }
-    }
-    drop(sender);
-
-    let receiver = Arc::new(Mutex::new(receiver));
     let num_threads = std::thread::available_parallelism()?.get();
     println!("Spawning {num_threads} threads");
     thread::scope(|s| {
@@ -79,9 +76,7 @@ pub fn rtx(
             let thread = s.spawn(|| {
                 let mut lines_drawed = 0;
                 loop {
-                    let message = receiver.lock().unwrap().recv();
-                    if let Ok(height) = message {
-                        let mut line = buffer.get_line();
+                    if let Some((height, mut line)) = buffer.get_line() {
                         rtx_line(
                             &scene,
                             image_width,

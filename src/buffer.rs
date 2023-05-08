@@ -35,11 +35,15 @@ impl Buffer {
         }
     }
 
-    pub fn get_line(&self) -> Vec<Color> {
-        self.leased_lines.fetch_add(1, Ordering::Relaxed);
+    pub fn get_line(&self) -> Option<(usize, Vec<Color>)> {
+        let prev_leased_lines = self.leased_lines.fetch_add(1, Ordering::Relaxed);
+        if prev_leased_lines >= self.height {
+            return None;
+        }
         self.print_status();
+        let line = Vec::<Color>::with_capacity(self.width);
 
-        Vec::<Color>::with_capacity(self.width)
+        Some((prev_leased_lines, line))
     }
 
     pub fn push_line(&self, height: usize, line: Vec<Color>) {

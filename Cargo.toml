@@ -7,5 +7,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "*"
-termion = "*"
 fastrand = "*"
+
+[features]
+simd = []

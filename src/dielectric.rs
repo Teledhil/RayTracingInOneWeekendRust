@@ -38,7 +38,7 @@ impl Material for Dielectric {
         let must_reflect = Self::reflectance(cos_theta, refraction_ratio) > fastrand::f64();
         let direction = match cannot_refract || must_reflect {
             true => unit_direction.reflect(hit_record.normal()),
-            false => refract(&unit_direction, hit_record.normal(), refraction_ratio),
+            false => refract(unit_direction, hit_record.normal(), refraction_ratio),
         };
 
         let scattered = Ray::new(hit_record.p(), direction);
