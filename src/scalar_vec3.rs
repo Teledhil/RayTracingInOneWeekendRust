@@ -231,7 +231,8 @@ macro_rules! length_squared_impl {
             type Output = $t;
 
             fn length_squared(self) -> Self::Output {
-                self.x().powi(2) + self.y().powi(2) + self.z().powi(2)
+                // x^2 + y^2 + z^2
+                self.x().mul_add(self.x(), self.y().mul_add(self.y(), self.z()*self.z()))
             }
         }
         forward_ref_unop! { impl LengthSquared, length_squared for ScalarVec3<$t> }
