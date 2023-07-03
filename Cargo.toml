@@ -11,3 +11,6 @@ fastrand = "*"
 
 [features]
 simd = []
+
+[profile.release]
+lto = true
