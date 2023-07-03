@@ -2,3 +2,7 @@
 .DS_Store
 *.ppm
 *.jpg
+
+flamegraph.svg
+perf.data
+perf.data.old

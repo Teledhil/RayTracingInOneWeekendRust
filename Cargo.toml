@@ -11,3 +11,7 @@ fastrand = "*"
 
 [features]
 simd = []
+
+[profile.release]
+lto = true
+codegen-units = 1
